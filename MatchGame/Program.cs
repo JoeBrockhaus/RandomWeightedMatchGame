@@ -74,7 +74,21 @@ namespace MatchGame
             return drawn;
         }
 
-        private static IEnumerable<Item> SimpleShuffle(IEnumerable<Item> items) => items.OrderBy(x => rand.Next()).ToArray();
+        private static IEnumerable<T> FisherYatesShuffle<T>(IList<T> items)
+        {
+            // http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
+            var copy = new List<T>(items);
+            int pos = copy.Count();
+            while (pos > 1)
+            {
+                pos--;
+                int left = rand.Next(pos + 1);
+                T right = copy[left];
+                copy[left] = copy[pos];
+                copy[pos] = right;
+            }
+            return copy;
+        }
 
         static void Main(string[] args)
         {
@@ -98,7 +112,7 @@ namespace MatchGame
                     .ToList();
 
                 // shuffle all the items
-                var shuffledDeck = SimpleShuffle(unShuffledItems);
+                var shuffledDeck = FisherYatesShuffle(unShuffledItems);
 
                 // confirm items are only added 2x
                 if (shuffledDeck.GroupBy(x => x.Id).Count() != 8)
