@@ -74,17 +74,53 @@ namespace MatchGame
             return drawn;
         }
 
+        private static IEnumerable<Item> SimpleShuffle(IEnumerable<Item> items) => items.OrderBy(x => rand.Next()).ToArray();
+
         static void Main(string[] args)
         {
             // generate some items
             var comms = Helper.GetItems(100, 100, ItemType.Common);
             var rares = Helper.GetItems(10, 200, ItemType.Rare);
             var epics = Helper.GetItems(1, 300, ItemType.Epic);
-            
-            // draw cards based on the desired distribution 
-            var drawnComms = DrawRandomWeightedItemsFromPool(comms, 5).ToArray();
-            var drawnRares = DrawRandomWeightedItemsFromPool(rares, 2).ToArray();
-            var drawnEpics = DrawRandomWeightedItemsFromPool(epics, 1).ToArray();
+
+            for (var testRuns = 0; testRuns < 5; testRuns++)
+            {
+                // draw cards based on the desired distribution 
+                var drawnComms = DrawRandomWeightedItemsFromPool(comms, 5).ToArray();
+                var drawnRares = DrawRandomWeightedItemsFromPool(rares, 2).ToArray();
+                var drawnEpics = DrawRandomWeightedItemsFromPool(epics, 1).ToArray();
+
+                // concat + duplicate each of the items
+                var unShuffledItems = Enumerable.Empty<Item>()
+                    .Concat(drawnComms).Concat(drawnComms)
+                    .Concat(drawnRares).Concat(drawnRares)
+                    .Concat(drawnEpics).Concat(drawnEpics)
+                    .ToList();
+
+                // shuffle all the items
+                var shuffledDeck = SimpleShuffle(unShuffledItems);
+
+                // confirm items are only added 2x
+                if (shuffledDeck.GroupBy(x => x.Id).Count() != 8)
+                    throw new Exception("Same card selected twice!");
+
+                // place items on the 4x4 board
+                var board = new Item[4, 4];
+                var counter = 0;
+                for (var row = 0; row < 4; row++)
+                {
+                    Console.Write("| ");
+                    for (var col = 0; col < 4; col++)
+                    {
+                        board[row, col] = shuffledDeck.ElementAt(counter);
+                        counter++;
+                        Console.Write($"{(board[row, col].Id).ToString().PadRight(3)} | ");
+                    }
+                    Console.WriteLine();
+                }
+
+                Console.ReadLine();
+            }
 
             Console.ReadLine();
         }
