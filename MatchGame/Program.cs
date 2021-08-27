@@ -29,24 +29,30 @@ namespace MatchGame
     {
         private static Random rand = new Random();
 
+        /// <summary>
+        /// 
+        /// Generates a List of Tuples of ascending-ordered 
+        /// Items with their associated Weighted Ranges
+        /// 
+        /// given:
+        ///    id  | weight
+        ///    ------------
+        ///     1  | 30
+        ///     2  | 45
+        ///     3  | 55
+        ///     4  | 35
+        ///     
+        /// result: 
+        ///     (1, (1, 30))
+        ///     (2, (31, 66))
+        ///     (3, (67, 112))
+        ///     (4, (113, 168))
+        /// 
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
         private static List<(Item Item, (int L, int U) Range)> GetWeightedItems(IEnumerable<Item> items)
         {
-            /*
-             * generate a range for each item
-             * given:
-             *  id | weight
-             *  1  | 30
-             *  2  | 45
-             *  ...
-             *  9  | 55
-             *  10 | 35
-             *  
-             * result: 
-             *  (1, (1,30))
-             *  (2, (31,66))
-             *  (3, (67,112))
-             *  (4, (113,168))
-             */
             var offset = 0;
             return items
                 .OrderBy(x => x.Weight)
@@ -54,6 +60,17 @@ namespace MatchGame
                 .ToList();
         }
 
+        /// <summary>
+        /// Given the pool of Items + number of cards to draw, generate a list of 
+        /// Item Tuples with their associated Range distributions, iterating n-times 
+        /// to return the desired number of draws from the Pool.
+        /// 
+        /// Removes the drawn card(s) from the pool and recalculates Item Weights
+        /// on each subsequent iteration.
+        /// </summary>
+        /// <param name="pool"></param>
+        /// <param name="cardsToDraw"></param>
+        /// <returns></returns>
         private static IEnumerable<Item> DrawRandomWeightedItemsFromPool(IEnumerable<Item> pool, int cardsToDraw)
         {
             var drawn = new List<Item>();
@@ -74,9 +91,15 @@ namespace MatchGame
             return drawn;
         }
 
+        /// <summary>
+        /// Implementation of the Fisher-Yates Shuffle pseudo-code algorithm.
+        /// http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
         private static IEnumerable<T> FisherYatesShuffle<T>(IList<T> items)
         {
-            // http://en.wikipedia.org/wiki/Fisher-Yates_shuffle
             var copy = new List<T>(items);
             int pos = copy.Count();
             while (pos > 1)
@@ -92,33 +115,33 @@ namespace MatchGame
 
         static void Main(string[] args)
         {
-            // generate some items
+            // 1. generate some items
             var comms = Helper.GetItems(100, 100, ItemType.Common);
             var rares = Helper.GetItems(10, 200, ItemType.Rare);
             var epics = Helper.GetItems(1, 300, ItemType.Epic);
 
             for (var testRuns = 0; testRuns < 5; testRuns++)
             {
-                // draw cards based on the desired distribution 
+                // 2. draw cards based on the desired distribution 
                 var drawnComms = DrawRandomWeightedItemsFromPool(comms, 5).ToArray();
                 var drawnRares = DrawRandomWeightedItemsFromPool(rares, 2).ToArray();
                 var drawnEpics = DrawRandomWeightedItemsFromPool(epics, 1).ToArray();
 
-                // concat + duplicate each of the items
+                // 3. concat + duplicate each of the items
                 var unShuffledItems = Enumerable.Empty<Item>()
                     .Concat(drawnComms).Concat(drawnComms)
                     .Concat(drawnRares).Concat(drawnRares)
                     .Concat(drawnEpics).Concat(drawnEpics)
                     .ToList();
 
-                // shuffle all the items
+                // 4. shuffle all the items
                 var shuffledDeck = FisherYatesShuffle(unShuffledItems);
 
-                // confirm items are only added 2x
+                // 4.a. confirm items are only added 2x
                 if (shuffledDeck.GroupBy(x => x.Id).Count() != 8)
                     throw new Exception("Same card selected twice!");
 
-                // place items on the 4x4 board
+                // 5. place items on the 4x4 board
                 var board = new Item[4, 4];
                 var counter = 0;
                 for (var row = 0; row < 4; row++)
@@ -135,6 +158,36 @@ namespace MatchGame
 
                 Console.ReadLine();
             }
+
+            /*
+             * Example Output: 
+             * 
+             * | 204 | 204 | 184 | 202 |
+             * | 121 | 157 | 196 | 202 |
+             * | 196 | 184 | 300 | 195 |
+             * | 195 | 157 | 121 | 300 |
+             * 
+             * | 300 | 191 | 170 | 194 |
+             * | 202 | 170 | 202 | 109 |
+             * | 194 | 207 | 207 | 191 |
+             * | 129 | 300 | 129 | 109 |
+             * 
+             * | 204 | 300 | 125 | 300 |
+             * | 195 | 149 | 125 | 204 |
+             * | 176 | 195 | 207 | 134 |
+             * | 176 | 134 | 149 | 207 |
+             * 
+             * | 206 | 169 | 109 | 109 |
+             * | 204 | 181 | 169 | 181 |
+             * | 206 | 124 | 204 | 157 |
+             * | 300 | 300 | 124 | 157 |
+             * 
+             * | 152 | 152 | 300 | 102 |
+             * | 166 | 202 | 207 | 207 |
+             * | 102 | 142 | 109 | 142 |
+             * | 166 | 202 | 109 | 300 |
+             * 
+             */
 
             Console.ReadLine();
         }
